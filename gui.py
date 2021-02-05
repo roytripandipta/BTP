@@ -1,11 +1,13 @@
 from tkinter import *
-
+import os
+import matplotlib.pyplot as plt
+import numpy as np
 root = Tk()
 root.geometry("644x344")
 
 
 def getvals():
-    print(length.get())
+    c = length.get()
     print(height.get())
     print(thickness.get())
 
@@ -38,3 +40,6 @@ Entry(root, textvariable = nodes_y).grid(row = 7, column = 4)
 
 Button(text = "Submit", command = getvals).grid(row = 8, column = 4, pady = 15)
 root.mainloop()
+
+print(os.getcwd())
+plt.plot()

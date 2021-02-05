@@ -3,7 +3,7 @@ import csv
 import re
 import math
 from typing import List, Any
-
+import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
 
@@ -71,21 +71,18 @@ def make_BC(Node_Data):
 
 # y = make_BC(x)
 # print(y)
-def apply_loads(Node_Data, length):
+def apply_loads(Node_Data, length, F):
     NNodes = len(Node_Data)
     NDOF = 2 * NNodes
     l = 0
     for x_ in Node_Data:
         if x_[1] == 0:
             l += 1
-    print(l)
-    F = 10000 / l
-    print(F)
+    F = F / l
     LOADS = [[0 for row in range(1)] for col in range(NDOF)]  # required matrix for loading conditions
     for x in Node_Data:
         if x[1] == length:
             LOADS[2 * (x[0] - 1)][0] = F
-    print(LOADS)
     return LOADS
 
 
@@ -341,3 +338,25 @@ def calc_average(disp, Node_Data, length):
             t += 1
     avg = d / t
     return avg
+
+
+def theoretical_disp(length, breadth, t, E, P):
+    A = breadth*t
+    d_th = (P * length)/(A*E)
+    return d_th
+
+
+def showPlots(node_list, U):
+    x = []
+    y = []
+    u = []
+    v = []
+    for i in range(0, len(node_list)):
+        x.append(node_list[i][1])
+        y.append(node_list[i][2])
+        u.append(U[2 * i][0])
+        v.append(U[2 * i + 1][0])
+    plt.figure()
+    plt.quiver(x, y, u, v)
+    plt.show()
+    plt.close()
