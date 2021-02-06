@@ -341,8 +341,8 @@ def calc_average(disp, Node_Data, length):
 
 
 def theoretical_disp(length, breadth, t, E, P):
-    A = breadth*t
-    d_th = (P * length)/(A*E)
+    A = breadth * t
+    d_th = (P * length) / (A * E)
     return d_th
 
 
@@ -351,12 +351,382 @@ def showPlots(node_list, U):
     y = []
     u = []
     v = []
-    for i in range(0, len(node_list)):
-        x.append(node_list[i][1])
-        y.append(node_list[i][2])
-        u.append(U[2 * i][0])
-        v.append(U[2 * i + 1][0])
+    for j in range(0, len(node_list)):
+        x.append(node_list[j][1])
+        y.append(node_list[j][2])
+        u.append(U[2 * j][0])
+        v.append(U[2 * j + 1][0])
     plt.figure()
     plt.quiver(x, y, u, v)
     plt.show()
     plt.close()
+
+
+# post processing
+def compute_db(D, ls, lt, X, Y):
+    DB1 = matrixmult(D, BMatrix(ls[0], lt[0], X, Y))
+    DB2 = matrixmult(D, BMatrix(ls[1], lt[1], X, Y))
+    DB3 = matrixmult(D, BMatrix(ls[2], lt[2], X, Y))
+    DB4 = matrixmult(D, BMatrix(ls[3], lt[3], X, Y))
+
+    return DB1, DB2, DB3, DB4
+
+
+def compute_dispElement(Displacement, EL_Data, i):
+    Disp_elem = [[0 for row in range(1)] for col in range(8)]
+
+    Disp_elem[0][0] = Displacement[2 * (EL_Data[i - 1][1]) - 2][0]
+    Disp_elem[1][0] = Displacement[2 * (EL_Data[i - 1][1]) - 1][0]
+    Disp_elem[2][0] = Displacement[2 * (EL_Data[i - 1][2]) - 2][0]
+    Disp_elem[3][0] = Displacement[2 * (EL_Data[i - 1][2]) - 1][0]
+    Disp_elem[4][0] = Displacement[2 * (EL_Data[i - 1][3]) - 2][0]
+    Disp_elem[5][0] = Displacement[2 * (EL_Data[i - 1][3]) - 1][0]
+    Disp_elem[6][0] = Displacement[2 * (EL_Data[i - 1][4]) - 2][0]
+    Disp_elem[7][0] = Displacement[2 * (EL_Data[i - 1][4]) - 1][0]
+    return Disp_elem
+
+
+def compute_strain_integration_point(ls, lt, X, Y, Disp_elem):
+    Strains_integrationpoint1 = matrixmult(BMatrix(ls[0], lt[0], X, Y), Disp_elem)
+    Strains_integrationpoint2 = matrixmult(BMatrix(ls[1], lt[1], X, Y), Disp_elem)
+    Strains_integrationpoint3 = matrixmult(BMatrix(ls[2], lt[2], X, Y), Disp_elem)
+    Strains_integrationpoint4 = matrixmult(BMatrix(ls[3], lt[3], X, Y), Disp_elem)
+    return Strains_integrationpoint1, Strains_integrationpoint2, Strains_integrationpoint3, Strains_integrationpoint4
+
+
+def compute_stress_integration_point(db, Disp_elem):
+    Stress_integrationpoint1 = matrixmult(db[0], Disp_elem)
+    Stress_integrationpoint2 = matrixmult(db[1], Disp_elem)
+    Stress_integrationpoint3 = matrixmult(db[2], Disp_elem)
+    Stress_integrationpoint4 = matrixmult(db[3], Disp_elem)
+    return Stress_integrationpoint1, Stress_integrationpoint2, Stress_integrationpoint3, Stress_integrationpoint4
+
+
+def compute_Sx(Stress_integrationPoint):
+    StressX = [[0 for row in range(1)] for col in range(4)]
+
+    StressX[0][0] = Stress_integrationPoint[0][0][0]
+    StressX[1][0] = Stress_integrationPoint[1][0][0]
+    StressX[2][0] = Stress_integrationPoint[2][0][0]
+    StressX[3][0] = Stress_integrationPoint[3][0][0]
+
+    return StressX
+
+
+def compute_Sy(Stress_integrationPoint):
+    StressY = [[0 for row in range(1)] for col in range(4)]
+
+    StressY[0][0] = Stress_integrationPoint[0][1][0]
+    StressY[1][0] = Stress_integrationPoint[1][1][0]
+    StressY[2][0] = Stress_integrationPoint[2][1][0]
+    StressY[3][0] = Stress_integrationPoint[3][1][0]
+
+    return StressY
+
+
+def compute_Sxy(Stress_integrationPoint):
+    StressXY = [[0 for row in range(1)] for col in range(4)]
+
+    StressXY[0][0] = Stress_integrationPoint[0][2][0]
+    StressXY[1][0] = Stress_integrationPoint[1][2][0]
+    StressXY[2][0] = Stress_integrationPoint[2][2][0]
+    StressXY[3][0] = Stress_integrationPoint[3][2][0]
+
+    return StressXY
+
+
+def compute_principal1(StressX, StressY, StressXY):
+    StressPrinc1 = [[0 for row in range(1)] for col in range(4)]
+
+    StressPrinc1[0][0] = (StressX[0][0] + StressY[0][0]) / 2 + (
+            ((StressX[0][0] - StressY[0][0]) / 2) ** 2 + (StressXY[0][0]) ** 2) ** 0.5
+    StressPrinc1[1][0] = (StressX[1][0] + StressY[1][0]) / 2 + (
+            ((StressX[1][0] - StressY[1][0]) / 2) ** 2 + (StressXY[1][0]) ** 2) ** 0.5
+    StressPrinc1[2][0] = (StressX[2][0] + StressY[2][0]) / 2 + (
+            ((StressX[2][0] - StressY[2][0]) / 2) ** 2 + (StressXY[2][0]) ** 2) ** 0.5
+    StressPrinc1[3][0] = (StressX[3][0] + StressY[3][0]) / 2 + (
+            ((StressX[3][0] - StressY[3][0]) / 2) ** 2 + (StressXY[3][0]) ** 2) ** 0.5
+
+    return StressPrinc1
+
+
+def compute_principal2(StressX, StressY, StressXY):
+    StressPrinc2 = [[0 for row in range(1)] for col in range(4)]
+    StressPrinc2[0][0] = (StressX[0][0] + StressY[0][0]) / 2 - (
+            ((StressX[0][0] - StressY[0][0]) / 2) ** 2 + (StressXY[0][0]) ** 2) ** 0.5
+    StressPrinc2[1][0] = (StressX[1][0] + StressY[1][0]) / 2 - (
+            ((StressX[1][0] - StressY[1][0]) / 2) ** 2 + (StressXY[1][0]) ** 2) ** 0.5
+    StressPrinc2[2][0] = (StressX[2][0] + StressY[2][0]) / 2 - (
+            ((StressX[2][0] - StressY[2][0]) / 2) ** 2 + (StressXY[2][0]) ** 2) ** 0.5
+    StressPrinc2[3][0] = (StressX[3][0] + StressY[3][0]) / 2 - (
+            ((StressX[3][0] - StressY[3][0]) / 2) ** 2 + (StressXY[3][0]) ** 2) ** 0.5
+
+    return StressPrinc2
+
+
+def compute_VM(StressPrinc1, StressPrinc2):
+    StressVM = [[0 for row in range(1)] for col in range(4)]
+
+    StressVM[0][0] = ((StressPrinc1[0][0]) ** 2 - StressPrinc1[0][0] * StressPrinc2[0][0] + (
+        StressPrinc2[0][0]) ** 2) ** 0.5
+    StressVM[1][0] = ((StressPrinc1[1][0]) ** 2 - StressPrinc1[1][0] * StressPrinc2[1][0] + (
+        StressPrinc2[1][0]) ** 2) ** 0.5
+    StressVM[2][0] = ((StressPrinc1[2][0]) ** 2 - StressPrinc1[2][0] * StressPrinc2[2][0] + (
+        StressPrinc2[2][0]) ** 2) ** 0.5
+    StressVM[3][0] = ((StressPrinc1[3][0]) ** 2 - StressPrinc1[3][0] * StressPrinc2[3][0] + (
+        StressPrinc2[3][0]) ** 2) ** 0.5
+
+    return StressVM
+
+
+# def extrapolate_result(EXTRAP, StressX, StressY, StressXY, StressVM, StressPrinc1, StressPrinc2):
+#     StressX_EXTRAP = matrixmult(EXTRAP, StressX)
+#     StressY_EXTRAP = matrixmult(EXTRAP, StressY)
+#     StressXY_EXTRAP = matrixmult(EXTRAP, StressXY)
+#     StressPrinc1_EXTRAP = matrixmult(EXTRAP, StressPrinc1)
+#     StressPrinc2_EXTRAP = matrixmult(EXTRAP, StressPrinc2)
+#     StressVM_EXTRAP = matrixmult(EXTRAP, StressVM)
+#
+#     return StressX_EXTRAP, StressY_EXTRAP, StressXY_EXTRAP, StressPrinc1_EXTRAP, StressPrinc2_EXTRAP, StressVM_EXTRAP
+
+"""
+def paraview_result(i, Node_Data, EL_Data, StressX, StressY, StressXY, StressPrinc1, StressPrinc2, StressVM,
+                    StressX_EXTRAP, StressY_EXTRAP, StressXY_EXTRAP, StressPrinc1_EXTRAP, StressPrinc2_EXTRAP,
+                    StressVM_EXTRAP, Strains_integrationpoint):
+    NNodes = 2 * Node_Data
+    PARAVIEW_RESULTS = [[None for row in range(72)] for col in range(NNodes)]
+    for r in range(0, NNodes):
+        PARAVIEW_RESULTS[r][0] = Node_Data[r][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][1] = StressX[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][2] = StressX[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][3] = StressX[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][4] = StressX[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][6] = StressY[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][7] = StressY[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][8] = StressY[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][9] = StressY[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][11] = StressXY[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][12] = StressXY[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][13] = StressXY[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][14] = StressXY[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][16] = StressPrinc1[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][17] = StressPrinc1[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][18] = StressPrinc1[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][19] = StressPrinc1[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][21] = StressPrinc2[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][22] = StressPrinc2[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][23] = StressPrinc2[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][24] = StressPrinc2[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][26] = StressVM[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][27] = StressVM[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][28] = StressVM[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][29] = StressVM[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][36] = StressX_EXTRAP[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][37] = StressX_EXTRAP[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][38] = StressX_EXTRAP[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][39] = StressX_EXTRAP[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][41] = StressY_EXTRAP[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][42] = StressY_EXTRAP[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][43] = StressY_EXTRAP[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][44] = StressY_EXTRAP[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][46] = StressXY_EXTRAP[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][47] = StressXY_EXTRAP[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][48] = StressXY_EXTRAP[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][49] = StressXY_EXTRAP[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][51] = StressPrinc1_EXTRAP[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][52] = StressPrinc1_EXTRAP[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][53] = StressPrinc1_EXTRAP[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][54] = StressPrinc1_EXTRAP[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][56] = StressPrinc2_EXTRAP[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][57] = StressPrinc2_EXTRAP[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][58] = StressPrinc2_EXTRAP[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][59] = StressPrinc2_EXTRAP[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][61] = StressVM_EXTRAP[0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][62] = StressVM_EXTRAP[1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][63] = StressVM_EXTRAP[2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][64] = StressVM_EXTRAP[3][0]
+
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][66] = Strains_integrationpoint[0][0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][66] = Strains_integrationpoint[1][0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][66] = Strains_integrationpoint[2][0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][66] = Strains_integrationpoint[3][0][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][70] = Strains_integrationpoint[0][1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][70] = Strains_integrationpoint[1][1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][70] = Strains_integrationpoint[2][1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][70] = Strains_integrationpoint[3][1][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][1] - 1][71] = Strains_integrationpoint[0][2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][2] - 1][71] = Strains_integrationpoint[1][2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][3] - 1][71] = Strains_integrationpoint[2][2][0]
+    PARAVIEW_RESULTS[EL_Data[i - 1][4] - 1][71] = Strains_integrationpoint[3][2][0]
+
+    # ================================= averaging the results ====================
+
+    return PARAVIEW_RESULTS
+
+"""
+
+
+def make_average(PARAVIEW_RESULTS, NNodes):
+    print('PARAVIEW FILE OUTPUT')
+    # ------------------------------------ SX
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(1, 5):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][5] = Sum / k
+    # ------------------------------------ SY
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(6, 10):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][10] = Sum / k
+    # ------------------------------------ SXY
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(11, 15):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][15] = Sum / k
+    # ------------------------------------ S1
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(16, 20):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][20] = Sum / k
+
+    # ------------------------------------ S2
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(21, 25):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][25] = Sum / k
+
+    # ------------------------------------ VM
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(26, 30):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][30] = Sum / k
+    # ------------------------------------ SX EXTRAPOLATED
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(36, 40):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][40] = Sum / k
+
+    # ------------------------------------ SY EXTRAPOLATED
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(41, 45):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][45] = Sum / k
+
+    # ------------------------------------ SXY EXTRAPOLATED
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(46, 50):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][50] = Sum / k
+    # ------------------------------------ S1 EXTRAPOLATED
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(51, 55):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][55] = Sum / k
+    # ------------------------------------ S2 EXTRAPOLATED
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(56, 60):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][60] = Sum / k
+    # ------------------------------------ VM EXTRAPOLATED
+    for i in range(0, NNodes):
+        k = 0
+        Sum = 0
+        for j in range(61, 65):
+            if PARAVIEW_RESULTS[i][j] is not None:
+                k = k + 1
+                Sum = Sum + PARAVIEW_RESULTS[i][j]
+        if k == 0:
+            print(i)
+        PARAVIEW_RESULTS[i][65] = Sum / k
+    # ------------------------------------ VECTORS RESULTS
+    for i in range(0, NNodes):
+        PARAVIEW_RESULTS[i][31] = np.arctan(
+            (2 * PARAVIEW_RESULTS[i][15]) / (PARAVIEW_RESULTS[i][5] - PARAVIEW_RESULTS[i][10])) / 2 * 180 / np.pi
+    for i in range(0, NNodes):
+        PARAVIEW_RESULTS[i][32] = np.cos(PARAVIEW_RESULTS[i][31] / (180 / np.pi)) * PARAVIEW_RESULTS[i][20]
+    for i in range(0, NNodes):
+        PARAVIEW_RESULTS[i][33] = np.sin(PARAVIEW_RESULTS[i][31] / (180 / np.pi)) * PARAVIEW_RESULTS[i][20]
+    for i in range(0, NNodes):
+        PARAVIEW_RESULTS[i][34] = np.sin(PARAVIEW_RESULTS[i][31] / (180 / np.pi)) * PARAVIEW_RESULTS[i][25]
+    for i in range(0, NNodes):
+        PARAVIEW_RESULTS[i][35] = np.cos(PARAVIEW_RESULTS[i][31] / (180 / np.pi)) * PARAVIEW_RESULTS[i][25]
+
+    return PARAVIEW_RESULTS
