@@ -255,7 +255,7 @@ def run():
     Entry(root, textvar=scvalue3, font="lucida 8 bold").grid(row=12, column=4, pady=10, padx=10)
 
     # disp = ""
-    b = Button(root, text="Submit", command=solve).grid(row=9, column=4, pady=15)
+    b = Button(root, text="Calculate", command=solve).grid(row=9, column=4, pady=15)
     b = Button(root, text="Close", command=root.destroy).grid(row=13, column=4, pady=15)
     root.mainloop()
 
