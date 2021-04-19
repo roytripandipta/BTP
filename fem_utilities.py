@@ -1,8 +1,4 @@
-import array
-import csv
-import re
-import math
-from typing import List, Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 from copy import deepcopy
@@ -89,12 +85,6 @@ def create_connectivity(length, breadth, nodes_in_x, nodes_in_y):
                     l.append(g[i + 1][j + 1])
                     eles.append(l)
                     flag = True
-
-                # eles[cnt][0] = int(cnt)
-                # eles[cnt][1] = g[i][j]
-                # eles[cnt][2] = g[i][j + 1]
-                # eles[cnt][3] = g[i + 1][j + 1]
-                # eles[cnt][4] = g[i+1][j]
                 else:
                     l.append(cnt)
                     l.append(g[i][j])
@@ -360,22 +350,6 @@ def mass_matrix(ls, lt, X, Y, Thickness, density):
                          Thickness), density)
 
     MassMatrixelement = matrixsum(matrixsum(matrixsum(MassMatrix1, MassMatrix2), MassMatrix3), MassMatrix4)
-
-    # *************************************************************************************
-    # GLOBAL STIFFNESS ANS MASS MATRIX ASSEMBLY
-    # *************************************************************************************
-    # NDOF = 2 * len(Node_Data)
-    # KG = [[0 for row in range(NDOF)] for col in range(NDOF)]
-    # Mmatrix = [[0 for row in range(NDOF)] for col in range(NDOF)]
-    # Ke = make_Ke(ls, lt, X, Y, Thickness)
-    # for r in range(0, 4):
-    #     for t in range(0, 2):
-    #         for z in range(0, 4):
-    #             for m in range(0, 2):
-    #                 rw = NDOFN * (EL_Data[i - 1][r + 1] - 1) + t
-    #                 cl = NDOFN * (EL_Data[i - 1][z + 1] - 1) + m
-    #                 KG[rw][cl] = KG[rw][cl] + Ke[NDOFN * r + t][NDOFN * z + m]
-    #                 Mmatrix[rw][cl] = Mmatrix[rw][cl] + MassMatrixelement[NDOFN * r + t][NDOFN * z + m]
 
     return MassMatrixelement
 
