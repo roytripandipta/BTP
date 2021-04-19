@@ -1,6 +1,7 @@
 import fem_utilities as fem
 import numpy as np
 from tkinter import *
+import copy
 
 
 # Note all units are in SI
@@ -68,7 +69,9 @@ def run():
         try:
             Node_Data = fem.make_nodes(length, breadth, no_of_nodes_in_x, no_of_nodes_in_y)
             # print(Node_Data)
+            # Node_Data,n,x,y = fem.create_nodes(length, breadth, no_of_nodes_in_x, no_of_nodes_in_y)
             EL_Data, NElements = fem.connectivity(length, breadth, no_of_nodes_in_x, no_of_nodes_in_y)
+            # EL_Data, NElements, g = fem.create_connectivity(length, breadth, no_of_nodes_in_x, no_of_nodes_in_y)
             # print(EL_Data)
             BC = fem.make_BC(Node_Data)
             # print(BC)
@@ -82,18 +85,33 @@ def run():
             LOADS_total = fem.remove_force_from_BC(LOADS, BC, NDOF)
             KG2 = fem.apply_BC(BC, KG, NDOF)
             displacement = fem.compute_displacement(KG2, LOADS_total)
+            # print("Node data")
+            # print(Node_Data)
+            # print("disp")
+            print("displacement")
+            # print(displacement)
+
             avg_d = fem.calc_average(displacement, Node_Data, length)
             print(avg_d)
             scvalue1.set(avg_d)
             # print(displacement)
             max_d = fem.max_disp(displacement)
-            print(max_d)
+            # print(max_d)
             scvalue2.set(max_d)
             # screen2.update()
             d_th = fem.theoretical_disp(length, breadth, Thickness, E, F)
             scvalue3.set(d_th)
             fem.showPlots(Node_Data, displacement)
-            np.savetxt("result/displacement.csv", displacement)
+            crack, element, crack_points = fem.extract_elem(g,EL_Data,breadth,Node_Data,displacement)
+            # print(element)
+            # element = np.array(element)
+            # np.savetxt("result/displacement.csv", displacement)
+            np.savetxt("result/crack.csv", crack, fmt = '%f', delimiter = ',')
+            # print(crack)
+            np.savetxt("result/Ele_Info.csv", element, fmt = '%d', delimiter = ',')
+            # print(crack_points)
+            np.savetxt("result/Node_Info.csv", crack_points, fmt=['%d', '%f', '%f', '%f', '%f', '%f', '%f'],
+                       delimiter=',')
             NNodes = len(Node_Data)
             PARAVIEW_RESULTS = [[None for row in range(72)] for col in range(NNodes)]
             for i in range(1, NElements + 1):
@@ -201,8 +219,9 @@ def run():
             s = 0
             for i in range(0, NNodes):
                 s += P[i][55]
-                print(P[i][55])
-            print(s / NNodes)
+
+            # err = (np.abs(d_th - P) / d_th) * 100
+            # print(f"error : {err}")
 
         except Exception as e:
             print(f"error in solution : {e}")
@@ -227,12 +246,12 @@ def run():
     nodes_x = IntVar()
     nodes_y = IntVar()
 
-    Length.set(10)
-    Height.set(30)
+    Length.set(50)
+    Height.set(20)
     Thickness_.set(1)
     Poisson_ratio.set(0.3)
     Young_mod.set(210e9)
-    Force.set(10000)
+    Force.set(100000000)
     nodes_x.set(3)
     nodes_y.set(5)
 

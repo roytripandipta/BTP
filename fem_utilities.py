@@ -28,6 +28,109 @@ def make_nodes(length, breadth, nodes_in_x, nodes_in_y):
 
 # x = make_nodes(10, 20, 3, 5)
 # print(x)
+def create_nodes(length, breadth, nodes_in_x, nodes_in_y):
+    x = np.linspace(0, length, nodes_in_x)
+    y = np.linspace(0, breadth, nodes_in_y)
+    xx, yy = np.meshgrid(x, y)
+    # dist = x[1]-x[0]
+    mid = len(xx[0]) // 2
+    crack_l = nodes_in_y // 4
+    x1 = xx[:crack_l]
+    x2 = xx[crack_l:].tolist()
+    mid = len(xx[0]) // 2
+    x1 = np.insert(x1, mid + 1, x1[:, mid], axis=1).tolist()
+    lst = x2 + x1
+    y1 = yy[:-crack_l].tolist()
+    y2 = yy[-crack_l:]
+    mid = len(yy[0]) // 2
+    y2 = np.insert(y2, mid + 1, y2[:, mid], axis=1).tolist()
+    lst1 = y1 + y2
+    no_of_nodes = 0
+    for i in range(len(lst)):
+        for j in range(len(lst[i])):
+            no_of_nodes += 1
+
+    arr = np.zeros((no_of_nodes + 1, 3))
+    count = 1
+    for j in range(len(lst)):
+        for k in range(len(lst[j])):
+            # arr[count][2] = yy[j][k]
+            arr[count][0] = int(count)
+            arr[count][1] = lst[j][k]
+            arr[count][2] = lst1[j][k]
+            count += 1
+    arr = arr[1:].tolist()
+    arr = [[int(x[0]), x[1], x[2]] for x in arr]
+    return arr, no_of_nodes, lst, lst1
+
+
+def create_connectivity(length, breadth, nodes_in_x, nodes_in_y):
+    _, _, l1, l2 = create_nodes(length, breadth, nodes_in_x, nodes_in_y)
+    g = []
+    count = 1
+    for i in range(len(l1)):
+        lt = []
+        for j in range(len(l1[i])):
+            lt.append(count)
+            count += 1
+        g.append(lt)
+    eles = []
+    cnt = 1
+    for i in range(len(g) - 1):
+        flag = False
+        for j in range(len(g[i]) - 1):
+            l = []
+            if l1[i][j] != l1[i][j + 1]:
+                if (l1[i + 1][j] == l1[i + 1][j + 1]) or flag:
+                    l.append(cnt)
+                    l.append(g[i][j])
+                    l.append(g[i][j + 1])
+                    l.append(g[i + 1][j + 2])
+                    l.append(g[i + 1][j + 1])
+                    eles.append(l)
+                    flag = True
+
+                # eles[cnt][0] = int(cnt)
+                # eles[cnt][1] = g[i][j]
+                # eles[cnt][2] = g[i][j + 1]
+                # eles[cnt][3] = g[i + 1][j + 1]
+                # eles[cnt][4] = g[i+1][j]
+                else:
+                    l.append(cnt)
+                    l.append(g[i][j])
+                    l.append(g[i][j + 1])
+                    l.append(g[i + 1][j + 1])
+                    l.append(g[i + 1][j])
+                    eles.append(l)
+                cnt += 1
+    return eles, len(eles), g
+
+
+def extract_elem(g, eles, height, arr, disp):
+    num = 0
+    for i in range(len(g)):
+        if len(g[i]) < len(g[i + 1]):
+            pos = len(g[i]) // 2
+            num = g[i][pos]
+            break
+    element = []
+    for i in range(len(eles)):
+        if num in eles[i][1:]:
+            element.append(eles[i])
+    crack_points = []
+    is_present = []
+    arr1 = deepcopy(arr)
+    for i in range(len(element)):
+        for j in element[i][1:]:
+            if j not in is_present:
+                arr1[j - 1].extend(
+                    [0.0, arr1[j - 1][1] + disp[2 * (j - 1)][0], arr1[j - 1][2] + disp[2 * (j - 1) + 1][0], 0.0])
+                crack_points.append(arr1[j - 1])
+                is_present.append(j)
+    crack = []
+    crack.extend([arr[num - 1][1], float(height)])
+    crack.extend(arr[num - 1][1:])
+    return crack, element, crack_points
 
 
 def connectivity(length, breadth, nodes_in_x, nodes_in_y):
